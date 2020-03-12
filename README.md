@@ -17,7 +17,7 @@
 圖片來源網站 [game-icons](https://game-icons.net/)
  & 授權方式 [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)
 ## 最後...
-如果有任何的問題(如Bug)，或者有任何的建議，都可以email -> at267acwzx@gmail.com
+如果有任何的問題(如Bug)，或者有任何的建議issues這裡
 
 現在就加入吧! BOT ID: @267acwzx
 
