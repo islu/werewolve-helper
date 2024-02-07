@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/islu/werewolve-helper/internal/notify"
 	"github.com/line/line-bot-sdk-go/v8/linebot"
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
 	"github.com/line/line-bot-sdk-go/v8/linebot/webhook"
@@ -74,6 +75,24 @@ func RegisterWebhook(config BotConfig, bot *messaging_api.MessagingApiAPI) {
 				case webhook.UserSource:
 					if err := handlePostbackEvent(bot, e.ReplyToken, e.Postback, source); err != nil {
 						log.Println("Handle postback event error: ", err)
+					}
+				default:
+					log.Printf("Unsupported source content: %T\n", e.Source)
+				}
+			case webhook.FollowEvent:
+				switch source := e.Source.(type) {
+				case webhook.UserSource:
+					if err := push(bot, config.LineNotifyToken, "FollowEvent", source); err != nil {
+						log.Println("Notify error: ", err)
+					}
+				default:
+					log.Printf("Unsupported source content: %T\n", e.Source)
+				}
+			case webhook.UnfollowEvent:
+				switch source := e.Source.(type) {
+				case webhook.UserSource:
+					if err := push(bot, config.LineNotifyToken, "UnfollowEvent", source); err != nil {
+						log.Println("Notify error: ", err)
 					}
 				default:
 					log.Printf("Unsupported source content: %T\n", e.Source)
@@ -266,6 +285,20 @@ func reply(bot *messaging_api.MessagingApiAPI, replyToken string, msg ...messagi
 			Messages:   messages,
 		},
 	); err != nil {
+		return err
+	}
+	return nil
+}
+
+func push(bot *messaging_api.MessagingApiAPI, accessToken string, eventType string, source webhook.UserSource) error {
+
+	profile, err := bot.GetProfile(source.UserId)
+	if err != nil {
+		return err
+	}
+
+	err = notify.SendText(accessToken, fmt.Sprintf("%s\n\n%#v", eventType, profile))
+	if err != nil {
 		return err
 	}
 	return nil

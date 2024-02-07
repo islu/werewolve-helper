@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/islu/werewolve-helper/internal"
-	_ "github.com/joho/godotenv/autoload"
 
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
 )
 
@@ -30,6 +30,7 @@ func main() {
 func initBotConfig() internal.BotConfig {
 	channelSecret := mustGetenv("LINE_CHANNEL_SECRET")
 	channelToken := mustGetenv("LINE_CHANNEL_TOKEN")
+	notifyToken := mustGetenv("LINE_NOTIFY_TOKEN")
 	developerID := mustGetenv("DEVELOPER_ID")
 
 	port := os.Getenv("PORT")
@@ -40,6 +41,7 @@ func initBotConfig() internal.BotConfig {
 	return internal.BotConfig{
 		LineChannelSecret: channelSecret,
 		LineChannelToken:  channelToken,
+		LineNotifyToken:   notifyToken,
 		Port:              port,
 		DeveloperID:       developerID,
 	}
