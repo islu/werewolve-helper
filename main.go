@@ -21,6 +21,10 @@ func main() {
 	}
 
 	internal.RegisterWebhook(config, bot)
+	// Add health check endpoint
+	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
 
 	if err := http.ListenAndServe(":"+config.Port, nil); err != nil {
 		log.Fatal(err)
