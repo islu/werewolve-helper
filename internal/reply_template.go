@@ -40,7 +40,7 @@ func CustomModeTemplate() messaging_api.MessageInterface {
 					Actions: []messaging_api.ActionInterface{
 						messaging_api.PostbackAction{Label: "設定平民", Data: "設定平民"},
 						messaging_api.PostbackAction{Label: "設定狼人", Data: "設定狼人"},
-						messaging_api.PostbackAction{Label: "設定白癡", Data: "設定白癡"},
+						// messaging_api.PostbackAction{Label: "設定白癡", Data: "設定白癡"},
 					},
 				},
 			},
