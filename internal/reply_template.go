@@ -2,17 +2,18 @@ package internal
 
 import "github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
 
+// Deprecated
 func ModeSettingTemplate() messaging_api.MessageInterface {
 	return &messaging_api.TemplateMessage{
 		AltText: "Setting game mode image carousel alt text",
 		Template: &messaging_api.ImageCarouselTemplate{
 			Columns: []messaging_api.ImageCarouselColumn{
 				{
-					ImageUrl: "https://raw.githubusercontent.com/islu/Werewolve-Helper/main/img/9_classic_mode.png",
+					ImageUrl: "https://raw.githubusercontent.com/islu/werewolve-helper/main/images/9_classic_mode.png",
 					Action:   messaging_api.PostbackAction{Label: "9人標準配置", Data: "9人標準配置"},
 				},
 				{
-					ImageUrl: "https://raw.githubusercontent.com/islu/Werewolve-Helper/main/img/all-seeing-eye.png",
+					ImageUrl: "https://raw.githubusercontent.com/islu/werewolve-helper/main/images/all-seeing-eye.png",
 					Action:   messaging_api.PostbackAction{Label: "自訂配置", Data: "自訂配置"},
 				},
 			},
@@ -20,6 +21,19 @@ func ModeSettingTemplate() messaging_api.MessageInterface {
 	}
 }
 
+func ModeSettingTemplateV2(liffID string) messaging_api.MessageInterface {
+	return &messaging_api.TemplateMessage{
+		AltText: "Setting role alt text",
+		Template: &messaging_api.ButtonsTemplate{
+			Title: "設定角色",
+			Actions: []messaging_api.ActionInterface{
+				messaging_api.UriAction{Label: "開始設定", Uri: "https://liff.line.me/" + liffID},
+			},
+		},
+	}
+}
+
+// Deprecated
 func CustomModeTemplate() messaging_api.MessageInterface {
 	return &messaging_api.TemplateMessage{
 		AltText: "Custom mode carousel alt text",
@@ -48,6 +62,7 @@ func CustomModeTemplate() messaging_api.MessageInterface {
 	}
 }
 
+// Deprecated
 func QuickReplyButtons() messaging_api.MessageInterface {
 	return &messaging_api.TextMessage{
 		Text: "設定人數",

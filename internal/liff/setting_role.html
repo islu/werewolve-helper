@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>狼人殺小幫手－設定角色</title>
+  <!-- LINE LIFF -->
+  <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+  <!-- jQuery -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0/jquery.min.js"></script>
+  <!-- Font Awesome -->
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.0-2/js/all.min.js'></script>
+  <!-- Bulma CSS-->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.1/css/bulma.min.css">
+  <!-- Bulma Toast -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bulma-toast/2.4.4/bulma-toast.min.js"
+    integrity="sha512-Mblf9e5nxLeT5MxzmcT1L3Esj3sBqKxAXgq+SQUf0/eaJTBvx2RXA+VP3Qjpg2zDAYSSc/j6n1Gf6oU0CW2tqw=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- Animate CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+
+  <!-- Custom style -->
+  <style>
+    body {
+      /* https://webgradients.com/ - 162 Perfect White */
+      background-image: linear-gradient(-225deg, #E3FDF5 0%, #FFE6FA 100%);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container is-fluid has-text-centered">
+
+    <section class="hero">
+      <div class="hero-body">
+        <h1 class="title has-text-black">設定角色</h1>
+      </div>
+      <hr>
+    </section>
+
+    <div class="fixed-grid has-2-cols">
+      <div class="grid">
+        <!-- 壞人陣營 -->
+        <div class="cell">
+          <span class="has-text-grey-dark">壞人陣營</span>
+          <button>
+            <span class="icon has-text-grey-dark">
+              <i class="fas fa-info-circle"></i>
+            </span>
+          </button>
+          <hr>
+        </div>
+        <div class="cell cell is-row-start-2">
+          <button class="button" id="werewolf-king-btn">狼王</button>
+        </div>
+        <div class="cell is-row-start-3">
+          <button class="button is-outlined" id="white-werewolf-btn">白狼王</button>
+        </div>
+        <div class="cell is-row-start-4">
+          <button class="button is-outlined" id="ghost-rider-btn">惡靈騎士</button>
+        </div>
+        <div class="cell is-row-start-5">
+          <button class="button is-outlined" id="werewolf-beauty-btn">狼美人</button>
+        </div>
+        <div class="cell is-row-start-6 is-row-span-3">
+          <button class="button is-rounded is-outlined" id="werewolf-dec">-</button>
+          <button class="button" id="werewolf-btn">狼人<span id="werewolf-count">x2</span></button>
+          <button class="button is-rounded is-outlined" id="werewolf-inc">+</button>
+        </div>
+        <!-- 好人陣營 -->
+        <div class="cell">
+          <span class="has-text-grey-dark">好人陣營</span>
+          <button>
+            <span class="icon has-text-grey-dark">
+              <i class="fas fa-info-circle"></i>
+            </span>
+          </button>
+          <hr>
+        </div>
+        <div class="cell">
+          <button class="button" id="seer-btn">預言家</button>
+        </div>
+        <div class="cell">
+          <button class="button" id="witch-btn">女巫</button>
+        </div>
+        <div class="cell">
+          <button class="button" id="hunter-btn">獵人</button>
+        </div>
+        <div class="cell">
+          <button class="button is-outlined" id="guard-btn">守衛</button>
+        </div>
+        <div class="cell">
+          <button class="button is-outlined" id="knight-btn">騎士</button>
+        </div>
+        <div class="cell">
+          <button class="button is-outlined" id="magician-btn">魔術師</button>
+        </div>
+        <div class="cell">
+          <button class="button is-rounded is-outlined" id="villager-dec">-</button>
+          <button class="button" id="villager-btn">平民<span id="villager-count">x3</span></button>
+          <button class="button is-rounded is-outlined" id="villager-inc">+</button>
+        </div>
+      </div>
+    </div>
+
+    <section class="has-text-centered">
+      <hr>
+      <div id="hint-total-container">
+        <span class="icon-text has-text-danger is-hidden" id="hint-total-icon">
+          <span class="icon">
+            <i class="fas fa-exclamation-triangle"></i>
+          </span>
+        </span>
+        <span class="has-text-grey-dark" id="hint-total">9人 = 3狼 + 3神 + 3民</span>
+      </div>
+    </section>
+
+    <section class="hero">
+      <div class="hero-body">
+        <button class="button is-large is-fullwidth has-text-primary-light" id="send-to-line-btn">
+          送出
+        </button>
+      </div>
+    </section>
+
+  </div>
+
+</body>
+
+</html>
+
+<!-- LIFF -->
+<script>
+  let userId;;
+  let name;
+  let picUrl;
+
+  function initializeLiff(myLiffId) {
+    liff.init({
+      liffId: myLiffId
+    }).then(() => {
+      if (!liff.isLoggedIn()) {
+        alert("用戶未登入");
+        liff.login();
+      } else {
+        // alert("用戶已登入");
+        liff.getProfile()
+          .then(profile => {
+            name = profile.displayName;
+            userId = profile.userId;
+            picUrl = profile.pictureUrl;
+          })
+          .catch((err) => {
+            console.log('error', err);
+          });
+      }
+    }).catch((err) => {
+      console.log('初始化失敗', err);
+    });
+  }
+
+  function pushMessageWithImage(queryString) {
+    liff.sendMessages([
+      {
+        type: 'image',
+        originalContentUrl: `https://raw.githubusercontent.com/islu/werewolve-helper/main/images/transparent.png?${queryString}`,
+        previewImageUrl: 'https://raw.githubusercontent.com/islu/werewolve-helper/main/images/transparent.png',
+      }
+    ]).then((res) => {
+
+      console.log('送訊息成功');
+
+      liff.closeWindow();
+
+    }).catch((err) => {
+      console.log('送訊息失敗', err);
+    });
+  }
+
+</script>
+
+<!-- Logic & Render -->
+<script>
+  // Variables
+  let werewolfCount = 2;
+  let villagerCount = 3;
+  let badCount = 1;
+  let godCount = 3;
+
+  function isValidNumberOfPeople() {
+    if (badCount + werewolfCount === 0) {
+      return false
+    }
+    if (godCount + villagerCount === 0) {
+      return false
+    }
+    return true
+  }
+
+  function initialize() {
+    $('#werewolf-count').text('x' + werewolfCount);
+    $('#villager-count').text('x' + villagerCount);
+    styleHintTotalStr();
+  }
+
+  function handleSetting() {
+    // 壞人陣營
+    $('#werewolf-king-btn').click(function () {
+      const btn = $('#werewolf-king-btn');
+      styleRoleButton(btn);
+      if (btn.hasClass("is-outlined")) {
+        badCount -= 1;
+      } else {
+        badCount += 1;
+      }
+      styleHintTotalStr();
+    });
+    $('#white-werewolf-btn').click(function () {
+      const btn = $('#white-werewolf-btn');
+      styleRoleButton(btn);
+      if (btn.hasClass("is-outlined")) {
+        badCount -= 1;
+      } else {
+        badCount += 1;
+      }
+      styleHintTotalStr();
+    });
+    $('#ghost-rider-btn').click(function () {
+      const btn = $('#ghost-rider-btn');
+      styleRoleButton(btn);
+      if (btn.hasClass("is-outlined")) {
+        badCount -= 1;
+      } else {
+        badCount += 1;
+      }
+      styleHintTotalStr();
+    });
+    $('#werewolf-beauty-btn').click(function () {
+      const btn = $('#werewolf-beauty-btn');
+      styleRoleButton(btn);
+      if (btn.hasClass("is-outlined")) {
+        badCount -= 1;
+      } else {
+        badCount += 1;
+      }
+      styleHintTotalStr();
+    });
+
+    $('#werewolf-btn').click(function () {
+      const btn = $('#werewolf-btn');
+
+      if (btn.hasClass("is-outlined")) {
+        btn.removeClass("is-outlined");
+        werewolfCount = 1;
+        $('#werewolf-inc').removeClass('is-invisible');
+        $('#werewolf-dec').removeClass('is-invisible');
+        $('#werewolf-count').text('x' + werewolfCount);
+      } else {
+        btn.addClass("is-outlined");
+        werewolfCount = 0;
+        $('#werewolf-inc').addClass('is-invisible');
+        $('#werewolf-dec').addClass('is-invisible');
+        $('#werewolf-count').text('');
+      }
+
+      styleHintTotalStr();
+    });
+
+    $('#werewolf-inc').click(function () {
+      werewolfCount++;
+      $('#werewolf-count').text('x' + werewolfCount);
+      styleHintTotalStr();
+    });
+    $('#werewolf-dec').click(function () {
+      werewolfCount--;
+      if (werewolfCount < 1) {
+        werewolfCount = 1;
+      }
+      $('#werewolf-count').text('x' + werewolfCount);
+      styleHintTotalStr();
+    });
+
+    // 好人陣營
+    $('#seer-btn').click(function () {
+      const btn = $('#seer-btn');
+      styleRoleButton(btn);
+      if (btn.hasClass("is-outlined")) {
+        godCount -= 1;
+      } else {
+        godCount += 1;
+      }
+      styleHintTotalStr();
+    });
+    $('#witch-btn').click(function () {
+      const btn = $('#witch-btn')
+      styleRoleButton(btn);
+      if (btn.hasClass("is-outlined")) {
+        godCount -= 1;
+      } else {
+        godCount += 1;
+      }
+      styleHintTotalStr();
+    })
+    $('#hunter-btn').click(function () {
+      const btn = $('#hunter-btn');
+      styleRoleButton(btn);
+      if (btn.hasClass("is-outlined")) {
+        godCount -= 1;
+      } else {
+        godCount += 1;
+      }
+      styleHintTotalStr();
+    });
+    $('#guard-btn').click(function () {
+      const btn = $('#guard-btn');
+      styleRoleButton(btn);
+      if (btn.hasClass("is-outlined")) {
+        godCount -= 1;
+      } else {
+        godCount += 1;
+      }
+      styleHintTotalStr();
+    });
+    $('#knight-btn').click(function () {
+      const btn = $('#knight-btn');
+      styleRoleButton(btn);
+      if (btn.hasClass("is-outlined")) {
+        godCount -= 1;
+      } else {
+        godCount += 1;
+      }
+      styleHintTotalStr();
+    });
+    $('#magician-btn').click(function () {
+      const btn = $('#magician-btn');
+      styleRoleButton(btn);
+      if (btn.hasClass("is-outlined")) {
+        godCount -= 1;
+      } else {
+        godCount += 1;
+      }
+      styleHintTotalStr();
+    });
+
+    $('#villager-btn').click(function () {
+      const btn = $('#villager-btn');
+
+      if (btn.hasClass("is-outlined")) {
+        btn.removeClass("is-outlined");
+        villagerCount = 1;
+        $('#villager-inc').removeClass('is-invisible');
+        $('#villager-dec').removeClass('is-invisible');
+        $('#villager-count').text('x' + villagerCount);
+      } else {
+        btn.addClass("is-outlined");
+        villagerCount = 0;
+        $('#villager-inc').addClass('is-invisible');
+        $('#villager-dec').addClass('is-invisible');
+        $('#villager-count').text('');
+      }
+      styleHintTotalStr();
+    });
+
+    $('#villager-inc').click(function () {
+      villagerCount++;
+      $('#villager-count').text('x' + villagerCount);
+      styleHintTotalStr();
+    });
+
+    $('#villager-dec').click(function () {
+      villagerCount--;
+      if (villagerCount < 1) {
+        villagerCount = 1;
+      }
+      $('#villager-count').text('x' + villagerCount);
+      styleHintTotalStr();
+    });
+  }
+
+  function handleSubmit() {
+    $('#send-to-line-btn').click(function () {
+      if (!isValidNumberOfPeople()) {
+        // Toast invalid setting
+        bulmaToast.toast({
+          message: '人數設定錯誤',
+          duration: 1200,
+          type: 'is-danger',
+          position: 'center',
+          animate: { in: 'fadeIn', out: 'fadeOut' },
+          extraClasses: 'is-light',
+        })
+        return;
+      }
+      //
+      let queryParams = [];
+      queryParams.push('m=settingRole');
+
+      if (!$('#werewolf-king-btn').hasClass("is-outlined")) {
+        queryParams.push('b1=1');
+      }
+      if (!$('#white-werewolf-btn').hasClass("is-outlined")) {
+        queryParams.push('b2=1');
+      }
+      if (!$('#ghost-rider-btn').hasClass("is-outlined")) {
+        queryParams.push('b3=1');
+      }
+      if (!$('#werewolf-beauty-btn').hasClass("is-outlined")) {
+        queryParams.push('b4=1');
+      }
+      if (!$('werewolf-btn').hasClass("is-outlined")) {
+        queryParams.push(`b0=${werewolfCount}`);
+      }
+      if (!$('#seer-btn').hasClass("is-outlined")) {
+        queryParams.push('g1=1');
+      }
+      if (!$('#witch-btn').hasClass("is-outlined")) {
+        queryParams.push('g2=1');
+      }
+      if (!$('#hunter-btn').hasClass("is-outlined")) {
+        queryParams.push('g3=1');
+      }
+      if (!$('#guard-btn').hasClass("is-outlined")) {
+        queryParams.push('g4=1');
+      }
+      if (!$('#knight-btn').hasClass("is-outlined")) {
+        queryParams.push('g5=1');
+      }
+      if (!$('#magician-btn').hasClass("is-outlined")) {
+        queryParams.push('g6=1');
+      }
+      if (!$('#villager-btn').hasClass("is-outlined")) {
+        queryParams.push(`g0=${villagerCount}`);
+      }
+
+      // console.log(queryParams.join('&'));
+      pushMessageWithImage(queryParams.join('&'));
+    });
+  }
+
+  function styleRoleButton(element) {
+    if (element.hasClass("is-outlined")) {
+      element.removeClass("is-outlined")
+      return;
+    }
+    element.addClass("is-outlined")
+  }
+
+  function styleHintTotalStr() {
+    const txt = $('#hint-total');
+
+    let total = badCount + godCount + werewolfCount + villagerCount;
+    let message = `${total}人 = ${badCount + werewolfCount}狼 + ${godCount}神 + ${villagerCount}民`;
+
+    txt.text(message);
+
+    if (isValidNumberOfPeople()) {
+      txt.removeClass();
+      txt.addClass('has-text-grey-dark')
+      $('#hint-total-icon').addClass('is-hidden');
+      $('#hint-total-container').removeClass();
+    } else {
+      txt.removeClass();
+      txt.addClass('has-text-danger');
+      $('#hint-total-icon').removeClass('is-hidden');
+      $('#hint-total-container').addClass('animate__animated animate__shakeX'); // Add animate
+    }
+  }
+
+</script>
+
+<!-- Main -->
+<script>
+
+  $(document).ready(function () {
+
+    // initializeLiff('{{ .LiffID }}'); // 接收傳遞的 liffid 參數
+
+    initialize();
+
+    handleSetting();
+    handleSubmit();
+
+  });
+
+</script>

@@ -37,6 +37,7 @@ func NewRound(userID, inviteNo string) *Round {
 	}
 }
 
+// Deprecated
 func NewRoundWith9PersonStandardMode(userID, inviteNo string) *Round {
 
 	round := NewRound(userID, inviteNo)
@@ -136,25 +137,46 @@ func NewParticipant(userID, name, pictureURL string, identity Identity) *Partici
 type Identity int
 
 const (
-	Werewolf Identity = iota + 1
-	Villager
+	//
+	WerewolfKing Identity = iota + 1
+	WhiteWerewolf
+	GhostRider
+	WerewolfBeauty
+	Werewolf
+	//
 	Seer
 	Witch
 	Hunter
+	Guard
+	Knight
+	Magician
+	Villager
 )
 
 func (iden Identity) String() string {
 	switch iden {
+	case WerewolfKing:
+		return "狼王"
+	case WhiteWerewolf:
+		return "白狼王"
+	case GhostRider:
+		return "惡靈騎士"
 	case Werewolf:
 		return "狼人"
-	case Villager:
-		return "平民"
 	case Seer:
 		return "預言家"
 	case Witch:
 		return "女巫"
 	case Hunter:
 		return "獵人"
+	case Guard:
+		return "守衛"
+	case Knight:
+		return "騎士"
+	case Magician:
+		return "魔術師"
+	case Villager:
+		return "平民"
 	}
 	return "unknown"
 }

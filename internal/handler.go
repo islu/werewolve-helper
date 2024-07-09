@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -22,16 +23,16 @@ var (
 
 // Postback event key
 const (
-	EventCreate              = "create"
-	EventLook                = "look"
-	EventAgain               = "again"
-	Event9PersonStandardMode = "9人標準配置"
-	EventCustomMode          = "自訂配置"
-	EventSettingWerewolf     = "設定狼人"
-	EventSettingVillager     = "設定平民"
-	EventSettingSeer         = "設定預言家"
-	EventSettingWitch        = "設定女巫"
-	EventSettingHunter       = "設定獵人"
+	EventCreate = "create"
+	EventLook   = "look"
+	EventAgain  = "again"
+	// Event9PersonStandardMode = "9人標準配置"
+	// EventCustomMode          = "自訂配置"
+	// EventSettingWerewolf     = "設定狼人"
+	// EventSettingVillager     = "設定平民"
+	// EventSettingSeer         = "設定預言家"
+	// EventSettingWitch        = "設定女巫"
+	// EventSettingHunter       = "設定獵人"
 )
 
 func RegisterWebhook(config BotConfig, bot *messaging_api.MessagingApiAPI) {
@@ -67,13 +68,22 @@ func RegisterWebhook(config BotConfig, bot *messaging_api.MessagingApiAPI) {
 					default:
 						log.Printf("Unsupported source content: %T\n", e.Source)
 					}
+				case webhook.ImageMessageContent:
+					switch source := e.Source.(type) {
+					case webhook.UserSource:
+						if err := handleImage(bot, e.ReplyToken, &message, source); err != nil {
+							log.Println("Handle image event error: ", err)
+						}
+					default:
+						log.Printf("Unsupported source content: %T\n", e.Source)
+					}
 				default:
 					log.Printf("Unsupported message content: %T\n", e.Message)
 				}
 			case webhook.PostbackEvent:
 				switch source := e.Source.(type) {
 				case webhook.UserSource:
-					if err := handlePostbackEvent(bot, e.ReplyToken, e.Postback, source); err != nil {
+					if err := handlePostbackEvent(bot, e.ReplyToken, e.Postback, source, config.LIFFID); err != nil {
 						log.Println("Handle postback event error: ", err)
 					}
 				default:
@@ -108,21 +118,21 @@ func handleText(bot *messaging_api.MessagingApiAPI, replyToken string, message *
 
 	text := message.Text
 
-	switch text {
-	case "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13":
+	// switch text {
+	// case "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13":
 
-		if r, ok := rounds[source.UserId]; ok {
-			if r.TempIdentityFlag {
-				n, _ := strconv.Atoi(text)
-				r.SetIdentity(source.UserId, r.TempIdentity, n)
-			}
-			r.TempIdentityFlag = false
+	// 	if r, ok := rounds[source.UserId]; ok {
+	// 		if r.TempIdentityFlag {
+	// 			n, _ := strconv.Atoi(text)
+	// 			r.SetIdentity(source.UserId, r.TempIdentity, n)
+	// 		}
+	// 		r.TempIdentityFlag = false
 
-			m1 := messaging_api.TextMessage{Text: "設定成功"}
-			return reply(bot, replyToken, m1)
-		}
+	// 		m1 := messaging_api.TextMessage{Text: "設定成功"}
+	// 		return reply(bot, replyToken, m1)
+	// 	}
 
-	}
+	// }
 
 	if ownerID := findRoundByInviteNo(text); ownerID != "" {
 
@@ -149,12 +159,146 @@ func handleText(bot *messaging_api.MessagingApiAPI, replyToken string, message *
 	return errors.New("Unknown message text " + text)
 }
 
-func handlePostbackEvent(bot *messaging_api.MessagingApiAPI, replyToken string, postback *webhook.PostbackContent, source webhook.UserSource) error {
+func handleImage(bot *messaging_api.MessagingApiAPI, replyToken string, message *webhook.ImageMessageContent, source webhook.UserSource) error {
+
+	u := message.ContentProvider.OriginalContentUrl
+
+	url, err := url.Parse(u)
+	if err != nil {
+		return err
+	}
+	q := url.Query()
+
+	switch q.Get("m") {
+	case "settingRole":
+
+		// Generate inviteNo
+		inviteNo := fmt.Sprintf("%06d", rand.Intn(999999))
+		if isRoundInviteNoDuplicate(inviteNo) {
+			log.Println("inviteNo duplicate: " + inviteNo)
+			m1 := messaging_api.TextMessage{Text: "創建失敗，請重新嘗試"}
+			return reply(bot, replyToken, m1)
+		}
+		// Create round and set identity
+		round := NewRound(source.UserId, inviteNo)
+		if v := q.Get("b1"); v != "" {
+			n, err := strconv.Atoi(v)
+			if err != nil {
+				log.Println("parse error with b1: ", err)
+				return err
+			}
+			round.SetIdentity(source.UserId, WerewolfKing, n)
+		}
+		if v := q.Get("b2"); v != "" {
+			n, err := strconv.Atoi(v)
+			if err != nil {
+				log.Println("parse error with b2: ", err)
+				return err
+			}
+			round.SetIdentity(source.UserId, WhiteWerewolf, n)
+		}
+		if v := q.Get("b3"); v != "" {
+			n, err := strconv.Atoi(v)
+			if err != nil {
+				log.Println("parse error with b3: ", err)
+				return err
+			}
+			round.SetIdentity(source.UserId, GhostRider, n)
+		}
+		if v := q.Get("b4"); v != "" {
+			n, err := strconv.Atoi(v)
+			if err != nil {
+				log.Println("parse error with b4: ", err)
+				return err
+			}
+			round.SetIdentity(source.UserId, WerewolfBeauty, n)
+		}
+		if v := q.Get("b0"); v != "" {
+			n, err := strconv.Atoi(v)
+			if err != nil {
+				log.Println("parse error with b0: ", err)
+				return err
+			}
+			round.SetIdentity(source.UserId, Werewolf, n)
+		}
+		if v := q.Get("g1"); v != "" {
+			n, err := strconv.Atoi(v)
+			if err != nil {
+				log.Println("parse error with g1: ", err)
+				return err
+			}
+			round.SetIdentity(source.UserId, Seer, n)
+		}
+		if v := q.Get("g2"); v != "" {
+			n, err := strconv.Atoi(v)
+			if err != nil {
+				log.Println("parse error with g2: ", err)
+				return err
+			}
+			round.SetIdentity(source.UserId, Witch, n)
+		}
+		if v := q.Get("g3"); v != "" {
+			n, err := strconv.Atoi(v)
+			if err != nil {
+				log.Println("parse error with g3: ", err)
+				return err
+			}
+			round.SetIdentity(source.UserId, Hunter, n)
+		}
+		if v := q.Get("g4"); v != "" {
+			n, err := strconv.Atoi(v)
+			if err != nil {
+				log.Println("parse error with g4: ", err)
+				return err
+			}
+			round.SetIdentity(source.UserId, Guard, n)
+		}
+		if v := q.Get("g5"); v != "" {
+			n, err := strconv.Atoi(v)
+			if err != nil {
+				log.Println("parse error with g5: ", err)
+				return err
+			}
+			round.SetIdentity(source.UserId, Knight, n)
+		}
+		if v := q.Get("g6"); v != "" {
+			n, err := strconv.Atoi(v)
+			if err != nil {
+				log.Println("parse error with g6: ", err)
+				return err
+			}
+			round.SetIdentity(source.UserId, Magician, n)
+		}
+		if v := q.Get("g0"); v != "" {
+			n, err := strconv.Atoi(v)
+			if err != nil {
+				log.Println("parse error with g0: ", err)
+				return err
+			}
+			round.SetIdentity(source.UserId, Villager, n)
+		}
+
+		rounds[source.UserId] = round
+
+		m1 := messaging_api.TextMessage{Text: "成功創建房間編號為: " + inviteNo}
+		return reply(bot, replyToken, m1)
+
+	}
+	return errors.New("Unknown url query key " + q.Get("m"))
+}
+
+func handlePostbackEvent(bot *messaging_api.MessagingApiAPI,
+	replyToken string,
+	postback *webhook.PostbackContent,
+	source webhook.UserSource,
+	liffID string,
+) error {
 	switch postback.Data {
 	case EventCreate:
 
 		delete(rounds, source.UserId)
-		return reply(bot, replyToken, ModeSettingTemplate())
+
+		return reply(bot, replyToken, ModeSettingTemplateV2(liffID))
 
 	case EventLook:
 
@@ -177,79 +321,81 @@ func handlePostbackEvent(bot *messaging_api.MessagingApiAPI, replyToken string, 
 
 		m1 := messaging_api.TextMessage{Text: "...目前沒有開設房間\n請先開設房間喔"}
 		return reply(bot, replyToken, m1)
-
-	case Event9PersonStandardMode:
-
-		inviteNo := fmt.Sprintf("%06d", rand.Intn(999999))
-		if isRoundInviteNoDuplicate(inviteNo) {
-			log.Println("inviteNo duplicate: " + inviteNo)
-			m1 := messaging_api.TextMessage{Text: "創建失敗，請重新嘗試"}
-			return reply(bot, replyToken, m1)
-		}
-
-		rounds[source.UserId] = NewRoundWith9PersonStandardMode(source.UserId, inviteNo)
-
-		m1 := messaging_api.TextMessage{Text: "成功創建房間編號為: " + inviteNo}
-		return reply(bot, replyToken, m1)
-
-	case EventCustomMode:
-
-		inviteNo := fmt.Sprintf("%06d", rand.Intn(999999))
-		if isRoundInviteNoDuplicate(inviteNo) {
-			log.Println("inviteNo duplicate: " + inviteNo)
-			m1 := messaging_api.TextMessage{Text: "創建失敗，請重新嘗試"}
-			return reply(bot, replyToken, m1)
-		}
-
-		rounds[source.UserId] = NewRound(source.UserId, inviteNo)
-
-		return reply(bot, replyToken, CustomModeTemplate())
-
-	case EventSettingWerewolf:
-
-		if r, ok := rounds[source.UserId]; ok {
-			r.TempIdentity = Werewolf
-			r.TempIdentityFlag = true
-			return reply(bot, replyToken, QuickReplyButtons())
-		}
-		return nil
-
-	case EventSettingVillager:
-
-		if r, ok := rounds[source.UserId]; ok {
-			r.TempIdentity = Villager
-			r.TempIdentityFlag = true
-			return reply(bot, replyToken, QuickReplyButtons())
-		}
-		return nil
-
-	case EventSettingSeer:
-
-		if r, ok := rounds[source.UserId]; ok {
-			r.TempIdentity = Seer
-			r.TempIdentityFlag = true
-			return reply(bot, replyToken, QuickReplyButtons())
-		}
-		return nil
-
-	case EventSettingWitch:
-
-		if r, ok := rounds[source.UserId]; ok {
-			r.TempIdentity = Witch
-			r.TempIdentityFlag = true
-			return reply(bot, replyToken, QuickReplyButtons())
-		}
-		return nil
-
-	case EventSettingHunter:
-
-		if r, ok := rounds[source.UserId]; ok {
-			r.TempIdentity = Hunter
-			r.TempIdentityFlag = true
-			return reply(bot, replyToken, QuickReplyButtons())
-		}
-		return nil
 	}
+	// ...
+
+	// case Event9PersonStandardMode:
+
+	// 	inviteNo := fmt.Sprintf("%06d", rand.Intn(999999))
+	// 	if isRoundInviteNoDuplicate(inviteNo) {
+	// 		log.Println("inviteNo duplicate: " + inviteNo)
+	// 		m1 := messaging_api.TextMessage{Text: "創建失敗，請重新嘗試"}
+	// 		return reply(bot, replyToken, m1)
+	// 	}
+
+	// 	rounds[source.UserId] = NewRoundWith9PersonStandardMode(source.UserId, inviteNo)
+
+	// 	m1 := messaging_api.TextMessage{Text: "成功創建房間編號為: " + inviteNo}
+	// 	return reply(bot, replyToken, m1)
+
+	// case EventCustomMode:
+
+	// 	inviteNo := fmt.Sprintf("%06d", rand.Intn(999999))
+	// 	if isRoundInviteNoDuplicate(inviteNo) {
+	// 		log.Println("inviteNo duplicate: " + inviteNo)
+	// 		m1 := messaging_api.TextMessage{Text: "創建失敗，請重新嘗試"}
+	// 		return reply(bot, replyToken, m1)
+	// 	}
+
+	// 	rounds[source.UserId] = NewRound(source.UserId, inviteNo)
+
+	// 	return reply(bot, replyToken, CustomModeTemplate())
+
+	// case EventSettingWerewolf:
+
+	// 	if r, ok := rounds[source.UserId]; ok {
+	// 		r.TempIdentity = Werewolf
+	// 		r.TempIdentityFlag = true
+	// 		return reply(bot, replyToken, QuickReplyButtons())
+	// 	}
+	// 	return nil
+
+	// case EventSettingVillager:
+
+	// 	if r, ok := rounds[source.UserId]; ok {
+	// 		r.TempIdentity = Villager
+	// 		r.TempIdentityFlag = true
+	// 		return reply(bot, replyToken, QuickReplyButtons())
+	// 	}
+	// 	return nil
+
+	// case EventSettingSeer:
+
+	// 	if r, ok := rounds[source.UserId]; ok {
+	// 		r.TempIdentity = Seer
+	// 		r.TempIdentityFlag = true
+	// 		return reply(bot, replyToken, QuickReplyButtons())
+	// 	}
+	// 	return nil
+
+	// case EventSettingWitch:
+
+	// 	if r, ok := rounds[source.UserId]; ok {
+	// 		r.TempIdentity = Witch
+	// 		r.TempIdentityFlag = true
+	// 		return reply(bot, replyToken, QuickReplyButtons())
+	// 	}
+	// 	return nil
+
+	// case EventSettingHunter:
+
+	// 	if r, ok := rounds[source.UserId]; ok {
+	// 		r.TempIdentity = Hunter
+	// 		r.TempIdentityFlag = true
+	// 		return reply(bot, replyToken, QuickReplyButtons())
+	// 	}
+	// 	return nil
+	// }
 	return errors.New("Unknown event key " + postback.Data)
 }
 
@@ -275,9 +421,7 @@ func findRoundByInviteNo(inviteNo string) string {
 func reply(bot *messaging_api.MessagingApiAPI, replyToken string, msg ...messaging_api.MessageInterface) error {
 
 	var messages []messaging_api.MessageInterface
-	for _, m := range msg {
-		messages = append(messages, m)
-	}
+	messages = append(messages, msg...)
 
 	if _, err := bot.ReplyMessage(
 		&messaging_api.ReplyMessageRequest{

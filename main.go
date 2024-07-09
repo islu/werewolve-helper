@@ -17,18 +17,22 @@ func main() {
 
 	bot, err := messaging_api.NewMessagingApiAPI(config.LineChannelToken)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 
 	internal.RegisterWebhook(config, bot)
+	// Add LIFF page endpoint
+	internal.RegisterLIFF(config)
 	// Add health check endpoint
 	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
 	if err := http.ListenAndServe(":"+config.Port, nil); err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
+
+	log.Println("Server start running")
 }
 
 func initBotConfig() internal.BotConfig {
@@ -36,6 +40,7 @@ func initBotConfig() internal.BotConfig {
 	channelToken := mustGetenv("LINE_CHANNEL_TOKEN")
 	notifyToken := mustGetenv("LINE_NOTIFY_TOKEN")
 	developerID := mustGetenv("DEVELOPER_ID")
+	liffID := mustGetenv("LIFF_ID")
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -48,6 +53,7 @@ func initBotConfig() internal.BotConfig {
 		LineNotifyToken:   notifyToken,
 		Port:              port,
 		DeveloperID:       developerID,
+		LIFFID:            liffID,
 	}
 }
 

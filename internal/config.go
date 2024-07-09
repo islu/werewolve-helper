@@ -6,4 +6,5 @@ type BotConfig struct {
 	LineNotifyToken   string
 	Port              string
 	DeveloperID       string
+	LIFFID            string
 }
