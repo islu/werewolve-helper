@@ -138,9 +138,20 @@ func handleText(bot *messaging_api.MessagingApiAPI, replyToken string, message *
 
 		if r, ok := rounds[source.UserId]; ok {
 
+			if r.IsExpired() {
+				delete(rounds, ownerID)
+				m1 := messaging_api.TextMessage{Text: "活動已結束"}
+				return reply(bot, replyToken, m1)
+			}
+
 			user, err := bot.GetProfile(source.UserId)
 			if err != nil {
 				return err
+			}
+
+			if ok, p := r.IsRegistrationDuplicate(user.UserId); ok {
+				m1 := messaging_api.TextMessage{Text: "已註冊，你的身分是 " + p.Identity.String()}
+				return reply(bot, replyToken, m1)
 			}
 
 			iden := r.Register(source.UserId, user.DisplayName, user.PictureUrl)
@@ -154,6 +165,9 @@ func handleText(bot *messaging_api.MessagingApiAPI, replyToken string, message *
 			m1 := messaging_api.TextMessage{Text: sb.String()}
 			return reply(bot, replyToken, m1)
 		}
+
+		m1 := messaging_api.TextMessage{Text: "查無此活動"}
+		return reply(bot, replyToken, m1)
 	}
 
 	return errors.New("Unknown message text " + text)

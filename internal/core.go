@@ -78,9 +78,10 @@ func (r *Round) Again() {
 	rng.Shuffle(len(r.Identities), func(i, j int) {
 		r.Identities[i], r.Identities[j] = r.Identities[j], r.Identities[i]
 	})
-	for i, p := range r.Participants {
-		p.Identity = r.Identities[i]
-	}
+	// Empty participants
+	r.Participants = []Participant{}
+	// Extend expire time
+	r.ExpireTime = time.Now().Add(2 * time.Hour)
 }
 
 func (r *Round) GetParticipantsInfoStr(userID string) string {
@@ -107,6 +108,15 @@ func (r *Round) GetParticipantsInfoStr(userID string) string {
 
 func (r *Round) IsRegistrationClose() bool {
 	return len(r.Identities) == len(r.Participants)
+}
+
+func (r *Round) IsRegistrationDuplicate(userID string) (bool, *Participant) {
+	for _, p := range r.Participants {
+		if p.UID == userID {
+			return true, &p
+		}
+	}
+	return false, nil
 }
 
 func (r *Round) IsOwner(creatorID string) bool {
