@@ -64,10 +64,12 @@
         <div class="cell is-row-start-5">
           <button class="button is-outlined" id="werewolf-beauty-btn">狼美人</button>
         </div>
-        <div class="cell is-row-start-6 is-row-span-3">
-          <button class="button is-rounded is-outlined" id="werewolf-dec">-</button>
+        <div class="cell is-row-start-6">
           <button class="button" id="werewolf-btn">狼人<span id="werewolf-count">x2</span></button>
-          <button class="button is-rounded is-outlined" id="werewolf-inc">+</button>
+        </div>
+        <div class="cell is-row-start-7 is-row-span-3">
+          <button class="button is-small is-rounded is-outlined" id="werewolf-dec">-</button>
+          <button class="button is-small is-rounded is-outlined" id="werewolf-inc">+</button>
         </div>
         <!-- 好人陣營 -->
         <div class="cell">
@@ -98,9 +100,11 @@
           <button class="button is-outlined" id="magician-btn">魔術師</button>
         </div>
         <div class="cell">
-          <button class="button is-rounded is-outlined" id="villager-dec">-</button>
           <button class="button" id="villager-btn">平民<span id="villager-count">x3</span></button>
-          <button class="button is-rounded is-outlined" id="villager-inc">+</button>
+        </div>
+        <div class="cell">
+          <button class="button is-small is-rounded is-outlined" id="villager-dec">-</button>
+          <button class="button is-small is-rounded is-outlined" id="villager-inc">+</button>
         </div>
       </div>
     </div>
@@ -254,14 +258,14 @@
       if (btn.hasClass("is-outlined")) {
         btn.removeClass("is-outlined");
         werewolfCount = 1;
-        $('#werewolf-inc').removeClass('is-invisible');
-        $('#werewolf-dec').removeClass('is-invisible');
+        $('#werewolf-inc').removeClass('is-hidden');
+        $('#werewolf-dec').removeClass('is-hidden');
         $('#werewolf-count').text('x' + werewolfCount);
       } else {
         btn.addClass("is-outlined");
         werewolfCount = 0;
-        $('#werewolf-inc').addClass('is-invisible');
-        $('#werewolf-dec').addClass('is-invisible');
+        $('#werewolf-inc').addClass('is-hidden');
+        $('#werewolf-dec').addClass('is-hidden');
         $('#werewolf-count').text('');
       }
 
@@ -350,14 +354,14 @@
       if (btn.hasClass("is-outlined")) {
         btn.removeClass("is-outlined");
         villagerCount = 1;
-        $('#villager-inc').removeClass('is-invisible');
-        $('#villager-dec').removeClass('is-invisible');
+        $('#villager-inc').removeClass('is-hidden');
+        $('#villager-dec').removeClass('is-hidden');
         $('#villager-count').text('x' + villagerCount);
       } else {
         btn.addClass("is-outlined");
         villagerCount = 0;
-        $('#villager-inc').addClass('is-invisible');
-        $('#villager-dec').addClass('is-invisible');
+        $('#villager-inc').addClass('is-hidden');
+        $('#villager-dec').addClass('is-hidden');
         $('#villager-count').text('');
       }
       styleHintTotalStr();
