@@ -26,13 +26,6 @@ const (
 	EventCreate = "create"
 	EventLook   = "look"
 	EventAgain  = "again"
-	// Event9PersonStandardMode = "9人標準配置"
-	// EventCustomMode          = "自訂配置"
-	// EventSettingWerewolf     = "設定狼人"
-	// EventSettingVillager     = "設定平民"
-	// EventSettingSeer         = "設定預言家"
-	// EventSettingWitch        = "設定女巫"
-	// EventSettingHunter       = "設定獵人"
 )
 
 func RegisterWebhook(config BotConfig, bot *messaging_api.MessagingApiAPI) {
@@ -117,22 +110,6 @@ func RegisterWebhook(config BotConfig, bot *messaging_api.MessagingApiAPI) {
 func handleText(bot *messaging_api.MessagingApiAPI, replyToken string, message *webhook.TextMessageContent, source webhook.UserSource) error {
 
 	text := message.Text
-
-	// switch text {
-	// case "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13":
-
-	// 	if r, ok := rounds[source.UserId]; ok {
-	// 		if r.TempIdentityFlag {
-	// 			n, _ := strconv.Atoi(text)
-	// 			r.SetIdentity(source.UserId, r.TempIdentity, n)
-	// 		}
-	// 		r.TempIdentityFlag = false
-
-	// 		m1 := messaging_api.TextMessage{Text: "設定成功"}
-	// 		return reply(bot, replyToken, m1)
-	// 	}
-
-	// }
 
 	if ownerID := findRoundByInviteNo(text); ownerID != "" {
 
@@ -336,80 +313,7 @@ func handlePostbackEvent(bot *messaging_api.MessagingApiAPI,
 		m1 := messaging_api.TextMessage{Text: "...目前沒有開設房間\n請先開設房間喔"}
 		return reply(bot, replyToken, m1)
 	}
-	// ...
 
-	// case Event9PersonStandardMode:
-
-	// 	inviteNo := fmt.Sprintf("%06d", rand.Intn(999999))
-	// 	if isRoundInviteNoDuplicate(inviteNo) {
-	// 		log.Println("inviteNo duplicate: " + inviteNo)
-	// 		m1 := messaging_api.TextMessage{Text: "創建失敗，請重新嘗試"}
-	// 		return reply(bot, replyToken, m1)
-	// 	}
-
-	// 	rounds[source.UserId] = NewRoundWith9PersonStandardMode(source.UserId, inviteNo)
-
-	// 	m1 := messaging_api.TextMessage{Text: "成功創建房間編號為: " + inviteNo}
-	// 	return reply(bot, replyToken, m1)
-
-	// case EventCustomMode:
-
-	// 	inviteNo := fmt.Sprintf("%06d", rand.Intn(999999))
-	// 	if isRoundInviteNoDuplicate(inviteNo) {
-	// 		log.Println("inviteNo duplicate: " + inviteNo)
-	// 		m1 := messaging_api.TextMessage{Text: "創建失敗，請重新嘗試"}
-	// 		return reply(bot, replyToken, m1)
-	// 	}
-
-	// 	rounds[source.UserId] = NewRound(source.UserId, inviteNo)
-
-	// 	return reply(bot, replyToken, CustomModeTemplate())
-
-	// case EventSettingWerewolf:
-
-	// 	if r, ok := rounds[source.UserId]; ok {
-	// 		r.TempIdentity = Werewolf
-	// 		r.TempIdentityFlag = true
-	// 		return reply(bot, replyToken, QuickReplyButtons())
-	// 	}
-	// 	return nil
-
-	// case EventSettingVillager:
-
-	// 	if r, ok := rounds[source.UserId]; ok {
-	// 		r.TempIdentity = Villager
-	// 		r.TempIdentityFlag = true
-	// 		return reply(bot, replyToken, QuickReplyButtons())
-	// 	}
-	// 	return nil
-
-	// case EventSettingSeer:
-
-	// 	if r, ok := rounds[source.UserId]; ok {
-	// 		r.TempIdentity = Seer
-	// 		r.TempIdentityFlag = true
-	// 		return reply(bot, replyToken, QuickReplyButtons())
-	// 	}
-	// 	return nil
-
-	// case EventSettingWitch:
-
-	// 	if r, ok := rounds[source.UserId]; ok {
-	// 		r.TempIdentity = Witch
-	// 		r.TempIdentityFlag = true
-	// 		return reply(bot, replyToken, QuickReplyButtons())
-	// 	}
-	// 	return nil
-
-	// case EventSettingHunter:
-
-	// 	if r, ok := rounds[source.UserId]; ok {
-	// 		r.TempIdentity = Hunter
-	// 		r.TempIdentityFlag = true
-	// 		return reply(bot, replyToken, QuickReplyButtons())
-	// 	}
-	// 	return nil
-	// }
 	return errors.New("Unknown event key " + postback.Data)
 }
 

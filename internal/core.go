@@ -13,8 +13,6 @@ var (
 )
 
 type Round struct {
-	// ID               int64
-	// UID              string
 	OwnerID          string
 	InviteNo         string
 	CreateTime       time.Time
@@ -35,20 +33,6 @@ func NewRound(userID, inviteNo string) *Round {
 		ExpireTime:       time.Now().Add(2 * time.Hour),
 		TempIdentityFlag: false,
 	}
-}
-
-// Deprecated
-func NewRoundWith9PersonStandardMode(userID, inviteNo string) *Round {
-
-	round := NewRound(userID, inviteNo)
-
-	round.SetIdentity(userID, Seer, 1)
-	round.SetIdentity(userID, Witch, 1)
-	round.SetIdentity(userID, Hunter, 1)
-	round.SetIdentity(userID, Villager, 3)
-	round.SetIdentity(userID, Werewolf, 3)
-
-	return round
 }
 
 func (r *Round) SetIdentity(userID string, iden Identity, nums int) {
@@ -128,7 +112,6 @@ func (r *Round) IsExpired() bool {
 }
 
 type Participant struct {
-	// ID         int64
 	UID        string
 	Name       string
 	PictureURL string
