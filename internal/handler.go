@@ -295,7 +295,7 @@ func handlePostbackEvent(bot *messaging_api.MessagingApiAPI,
 
 		if r, ok := rounds[source.UserId]; ok {
 			m1 := messaging_api.TextMessage{Text: "房間編號為: " + r.InviteNo}
-			m2 := messaging_api.TextMessage{Text: r.GetParticipantsInfoStr(source.UserId)}
+			m2 := messaging_api.TextMessage{Text: r.GetParticipantsInfoReplyMessage(source.UserId)}
 			return reply(bot, replyToken, m1, m2)
 		}
 

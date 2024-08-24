@@ -68,7 +68,7 @@ func (r *Round) Again() {
 	r.ExpireTime = time.Now().Add(2 * time.Hour)
 }
 
-func (r *Round) GetParticipantsInfoStr(userID string) string {
+func (r *Round) GetParticipantsInfoReplyMessage(userID string) string {
 	if !r.IsOwner(userID) {
 		log.Println(r.InviteNo)
 		log.Println(r.OwnerID + " not equal " + userID)
