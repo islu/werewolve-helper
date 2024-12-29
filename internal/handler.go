@@ -85,7 +85,7 @@ func RegisterWebhook(config BotConfig, bot *messaging_api.MessagingApiAPI) {
 			case webhook.FollowEvent:
 				switch source := e.Source.(type) {
 				case webhook.UserSource:
-					if err := push(bot, config.LineNotifyToken, "FollowEvent", source); err != nil {
+					if err := push(bot, "FollowEvent", source, config.DiscordBotToken, config.DiscordChannelID); err != nil {
 						log.Println("Notify error: ", err)
 					}
 				default:
@@ -94,7 +94,7 @@ func RegisterWebhook(config BotConfig, bot *messaging_api.MessagingApiAPI) {
 			case webhook.UnfollowEvent:
 				switch source := e.Source.(type) {
 				case webhook.UserSource:
-					if err := push(bot, config.LineNotifyToken, "UnfollowEvent", source); err != nil {
+					if err := push(bot, "UnfollowEvent", source, config.DiscordBotToken, config.DiscordChannelID); err != nil {
 						log.Println("Notify error: ", err)
 					}
 				default:
@@ -352,14 +352,15 @@ func reply(bot *messaging_api.MessagingApiAPI, replyToken string, msg ...messagi
 	return nil
 }
 
-func push(bot *messaging_api.MessagingApiAPI, accessToken string, eventType string, source webhook.UserSource) error {
+func push(bot *messaging_api.MessagingApiAPI, eventType string, source webhook.UserSource, discordBotToken, discordChannelID string) error {
 
 	profile, err := bot.GetProfile(source.UserId)
 	if err != nil {
 		return err
 	}
 
-	err = notify.SendText(accessToken, fmt.Sprintf("%s\n\n%#v", eventType, profile))
+	msg := fmt.Sprintf("%s\n\n%#v", eventType, profile)
+	_, err = notify.SendMessageByDiscord(discordBotToken, discordChannelID, msg)
 	if err != nil {
 		return err
 	}

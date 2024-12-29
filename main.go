@@ -38,9 +38,10 @@ func main() {
 func initBotConfig() internal.BotConfig {
 	channelSecret := mustGetenv("LINE_CHANNEL_SECRET")
 	channelToken := mustGetenv("LINE_CHANNEL_TOKEN")
-	notifyToken := mustGetenv("LINE_NOTIFY_TOKEN")
 	developerID := mustGetenv("DEVELOPER_ID")
 	liffID := mustGetenv("LIFF_ID")
+	dcBotToken := mustGetenv("DISCORD_BOT_TOKEN")
+	dcChannelID := mustGetenv("DISCORD_CHANNEL_ID")
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -50,10 +51,13 @@ func initBotConfig() internal.BotConfig {
 	return internal.BotConfig{
 		LineChannelSecret: channelSecret,
 		LineChannelToken:  channelToken,
-		LineNotifyToken:   notifyToken,
 		Port:              port,
 		DeveloperID:       developerID,
 		LIFFID:            liffID,
+		DiscordBotToken:   dcBotToken,
+		DiscordChannelID:  dcChannelID,
+
+		// LineNotifyToken:   notifyToken,
 	}
 }
 

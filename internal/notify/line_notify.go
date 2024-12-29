@@ -1,5 +1,8 @@
 package notify
 
+// IMPORTANT: Announcing the end of service for LINE Notify
+// Ref: https://notify-bot.line.me/closing-announce
+
 import (
 	"encoding/json"
 	"fmt"
@@ -11,7 +14,7 @@ import (
 
 const lineNotifyApiURL = "https://notify-api.line.me/api/notify"
 
-// send line notify simple text
+// Deprecated: Send line notify simple text
 func SendText(accessToken, message string) (err error) {
 	body := strings.NewReader(url.Values{
 		"message": []string{message},
