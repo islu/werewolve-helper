@@ -356,7 +356,8 @@ func push(bot *messaging_api.MessagingApiAPI, eventType string, source webhook.U
 
 	profile, err := bot.GetProfile(source.UserId)
 	if err != nil {
-		return err
+		profile = &messaging_api.UserProfileResponse{}
+		// return err
 	}
 
 	msg := fmt.Sprintf("%s\n\n%#v", eventType, profile)
