@@ -35,14 +35,17 @@ func NewRound(userID, inviteNo string) *Round {
 // SetIdentity sets the identities for the round. Only the owner can set identities.
 // It adds the specified identity 'nums' times and shuffles the list of identities.
 func (r *Round) SetIdentity(userID string, iden Identity, nums int) {
-	if r.IsOwner(userID) {
-		for range nums {
-			r.Identities = append(r.Identities, iden)
-		}
-		// Shuffle identities to randomize assignment.
-		_ = Rng.Shuffle(len(r.Identities), func(i, j int) {
-			r.Identities[i], r.Identities[j] = r.Identities[j], r.Identities[i]
-		})
+	if !r.IsOwner(userID) {
+		return
+	}
+	for range nums {
+		r.Identities = append(r.Identities, iden)
+	}
+	// Shuffle identities to randomize assignment.
+	if err := Rng.Shuffle(len(r.Identities), func(i, j int) {
+		r.Identities[i], r.Identities[j] = r.Identities[j], r.Identities[i]
+	}); err != nil {
+		log.Printf("shuffle error: %v", err)
 	}
 }
 

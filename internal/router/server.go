@@ -36,11 +36,11 @@ func StartServer() {
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
-	if err := server.ListenAndServe(); err != nil {
-		log.Fatalln(err)
-	}
 
-	log.Println("Server start running")
+	log.Println("Server starting on port " + config.Port)
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("ListenAndServe(): %v", err)
+	}
 }
 
 func initBotConfig() internal.BotConfig {
@@ -68,7 +68,7 @@ func initBotConfig() internal.BotConfig {
 func mustGetenv(k string) string {
 	v := os.Getenv(k)
 	if v == "" {
-		log.Fatalf("Fatal Error in connect_connector.go: %s environment variable not set.\n", k)
+		log.Fatalf("Fatal Error: %s environment variable not set.\n", k)
 	}
 	return v
 }

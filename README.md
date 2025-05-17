@@ -26,7 +26,7 @@
 
 ## 現在就加入吧
 
-LINE ID: d`@267acwzx`
+LINE ID: `@267acwzx`
 
 [![加入好友](https://scdn.line-apps.com/n/line_add_friends/btn/zh-Hant.png)](https://lin.ee/uf4jRMg)
 

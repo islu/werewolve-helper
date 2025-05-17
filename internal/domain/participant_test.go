@@ -38,8 +38,8 @@ func TestIdentity_String(t *testing.T) {
 		{Knight, "騎士"},
 		{Magician, "魔術師"},
 		{Villager, "平民"},
-		{Identity(99), "unknown"},   // Test unknown identity
-		{WerewolfBeauty, "unknown"}, // As per current String() implementation
+		{WerewolfBeauty, "狼美人"},
+		{Identity(99), "unknown"}, // Test unknown identity
 	}
 
 	for _, tt := range tests {

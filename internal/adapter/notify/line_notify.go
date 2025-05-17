@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 const lineNotifyURL = "https://notify-api.line.me/api/notify"
@@ -41,7 +42,9 @@ func requestToLineServer(body io.Reader, accessToken, contentType string) error 
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
 	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		return http.ErrUseLastResponse
 	}

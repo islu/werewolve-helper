@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -34,8 +35,8 @@ func TestRound_SetIdentity(t *testing.T) {
 	round.SetIdentity(ownerID, Werewolf, 2)
 	assert.Len(round.Identities, 2, "Expected 2 identities")
 	werewolfCount := 0
-	for _, iden := range round.Identities {
-		if iden == Werewolf {
+	for _, identity := range round.Identities {
+		if identity == Werewolf {
 			werewolfCount++
 		}
 	}
@@ -45,8 +46,8 @@ func TestRound_SetIdentity(t *testing.T) {
 	round.SetIdentity(nonOwnerID, Villager, 1)
 	assert.Len(round.Identities, 2, "Identities should not change after non-owner attempt")
 	villagerCount := 0
-	for _, iden := range round.Identities {
-		if iden == Villager {
+	for _, identity := range round.Identities {
+		if identity == Villager {
 			villagerCount++
 		}
 	}
@@ -159,7 +160,7 @@ func TestRound_IsOwner(t *testing.T) {
 	round := NewRound(ownerID, "testInvite")
 	assert := assert.New(t)
 
-	assert.True(round.IsOwner(ownerID), "Expected %s to be owner", ownerID)
+	assert.True(round.IsOwner(ownerID), fmt.Sprintf("Expected %s to be owner", ownerID))
 	assert.False(round.IsOwner("nonOwner456"), "Expected nonOwner456 not to be owner")
 }
 
