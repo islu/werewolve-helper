@@ -1,16 +1,19 @@
-package internal
+package router
 
 import (
 	"errors"
 	"fmt"
 	"log"
-	"math/rand"
+	mrand "math/rand/v2" // Using math/rand/v2
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 
-	"github.com/islu/werewolve-helper/internal/notify"
+	"werewolve-helper/internal"
+	"werewolve-helper/internal/adapter/notify"
+	"werewolve-helper/internal/domain"
+
 	"github.com/line/line-bot-sdk-go/v8/linebot"
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
 	"github.com/line/line-bot-sdk-go/v8/linebot/webhook"
@@ -18,7 +21,7 @@ import (
 
 var (
 	// {key: ownerID, value: Round}
-	rounds = make(map[string]*Round)
+	rounds = make(map[string]*domain.Round)
 )
 
 // Postback event key
@@ -28,7 +31,7 @@ const (
 	EventAgain  = "again"
 )
 
-func RegisterWebhook(config BotConfig, bot *messaging_api.MessagingApiAPI) {
+func RegisterWebhook(config internal.BotConfig, bot *messaging_api.MessagingApiAPI) {
 
 	// Setup HTTP Server for receiving requests from LINE platform
 	http.HandleFunc("/callback", func(w http.ResponseWriter, req *http.Request) {
@@ -76,7 +79,7 @@ func RegisterWebhook(config BotConfig, bot *messaging_api.MessagingApiAPI) {
 			case webhook.PostbackEvent:
 				switch source := e.Source.(type) {
 				case webhook.UserSource:
-					if err := handlePostbackEvent(bot, e.ReplyToken, e.Postback, source, config.LIFFID); err != nil {
+					if err := handlePostbackEvent(bot, e.ReplyToken, e.Postback, source, config.LiffID); err != nil {
 						log.Println("Handle postback event error: ", err)
 					}
 				default:
@@ -164,21 +167,21 @@ func handleImage(bot *messaging_api.MessagingApiAPI, replyToken string, message 
 	case "settingRole":
 
 		// Generate inviteNo
-		inviteNo := fmt.Sprintf("%06d", rand.Intn(999999))
+		inviteNo := fmt.Sprintf("%06d", mrand.IntN(999999))
 		if isRoundInviteNoDuplicate(inviteNo) {
 			log.Println("inviteNo duplicate: " + inviteNo)
 			m1 := messaging_api.TextMessage{Text: "創建失敗，請重新嘗試"}
 			return reply(bot, replyToken, m1)
 		}
 		// Create round and set identity
-		round := NewRound(source.UserId, inviteNo)
+		round := domain.NewRound(source.UserId, inviteNo)
 		if v := q.Get("b1"); v != "" {
 			n, err := strconv.Atoi(v)
 			if err != nil {
 				log.Println("parse error with b1: ", err)
 				return err
 			}
-			round.SetIdentity(source.UserId, WerewolfKing, n)
+			round.SetIdentity(source.UserId, domain.WerewolfKing, n)
 		}
 		if v := q.Get("b2"); v != "" {
 			n, err := strconv.Atoi(v)
@@ -186,7 +189,7 @@ func handleImage(bot *messaging_api.MessagingApiAPI, replyToken string, message 
 				log.Println("parse error with b2: ", err)
 				return err
 			}
-			round.SetIdentity(source.UserId, WhiteWerewolf, n)
+			round.SetIdentity(source.UserId, domain.WhiteWerewolf, n)
 		}
 		if v := q.Get("b3"); v != "" {
 			n, err := strconv.Atoi(v)
@@ -194,7 +197,7 @@ func handleImage(bot *messaging_api.MessagingApiAPI, replyToken string, message 
 				log.Println("parse error with b3: ", err)
 				return err
 			}
-			round.SetIdentity(source.UserId, GhostRider, n)
+			round.SetIdentity(source.UserId, domain.GhostRider, n)
 		}
 		if v := q.Get("b4"); v != "" {
 			n, err := strconv.Atoi(v)
@@ -202,7 +205,7 @@ func handleImage(bot *messaging_api.MessagingApiAPI, replyToken string, message 
 				log.Println("parse error with b4: ", err)
 				return err
 			}
-			round.SetIdentity(source.UserId, WerewolfBeauty, n)
+			round.SetIdentity(source.UserId, domain.WerewolfBeauty, n)
 		}
 		if v := q.Get("b0"); v != "" {
 			n, err := strconv.Atoi(v)
@@ -210,7 +213,7 @@ func handleImage(bot *messaging_api.MessagingApiAPI, replyToken string, message 
 				log.Println("parse error with b0: ", err)
 				return err
 			}
-			round.SetIdentity(source.UserId, Werewolf, n)
+			round.SetIdentity(source.UserId, domain.Werewolf, n)
 		}
 		if v := q.Get("g1"); v != "" {
 			n, err := strconv.Atoi(v)
@@ -218,7 +221,7 @@ func handleImage(bot *messaging_api.MessagingApiAPI, replyToken string, message 
 				log.Println("parse error with g1: ", err)
 				return err
 			}
-			round.SetIdentity(source.UserId, Seer, n)
+			round.SetIdentity(source.UserId, domain.Seer, n)
 		}
 		if v := q.Get("g2"); v != "" {
 			n, err := strconv.Atoi(v)
@@ -226,7 +229,7 @@ func handleImage(bot *messaging_api.MessagingApiAPI, replyToken string, message 
 				log.Println("parse error with g2: ", err)
 				return err
 			}
-			round.SetIdentity(source.UserId, Witch, n)
+			round.SetIdentity(source.UserId, domain.Witch, n)
 		}
 		if v := q.Get("g3"); v != "" {
 			n, err := strconv.Atoi(v)
@@ -234,7 +237,7 @@ func handleImage(bot *messaging_api.MessagingApiAPI, replyToken string, message 
 				log.Println("parse error with g3: ", err)
 				return err
 			}
-			round.SetIdentity(source.UserId, Hunter, n)
+			round.SetIdentity(source.UserId, domain.Hunter, n)
 		}
 		if v := q.Get("g4"); v != "" {
 			n, err := strconv.Atoi(v)
@@ -242,7 +245,7 @@ func handleImage(bot *messaging_api.MessagingApiAPI, replyToken string, message 
 				log.Println("parse error with g4: ", err)
 				return err
 			}
-			round.SetIdentity(source.UserId, Guard, n)
+			round.SetIdentity(source.UserId, domain.Guard, n)
 		}
 		if v := q.Get("g5"); v != "" {
 			n, err := strconv.Atoi(v)
@@ -250,7 +253,7 @@ func handleImage(bot *messaging_api.MessagingApiAPI, replyToken string, message 
 				log.Println("parse error with g5: ", err)
 				return err
 			}
-			round.SetIdentity(source.UserId, Knight, n)
+			round.SetIdentity(source.UserId, domain.Knight, n)
 		}
 		if v := q.Get("g6"); v != "" {
 			n, err := strconv.Atoi(v)
@@ -258,7 +261,7 @@ func handleImage(bot *messaging_api.MessagingApiAPI, replyToken string, message 
 				log.Println("parse error with g6: ", err)
 				return err
 			}
-			round.SetIdentity(source.UserId, Magician, n)
+			round.SetIdentity(source.UserId, domain.Magician, n)
 		}
 		if v := q.Get("g0"); v != "" {
 			n, err := strconv.Atoi(v)
@@ -266,7 +269,7 @@ func handleImage(bot *messaging_api.MessagingApiAPI, replyToken string, message 
 				log.Println("parse error with g0: ", err)
 				return err
 			}
-			round.SetIdentity(source.UserId, Villager, n)
+			round.SetIdentity(source.UserId, domain.Villager, n)
 		}
 
 		rounds[source.UserId] = round

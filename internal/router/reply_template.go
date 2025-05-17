@@ -1,7 +1,6 @@
-package internal
+package router
 
 import "github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
-
 
 func ModeSettingTemplateV2(liffID string) messaging_api.MessageInterface {
 	return &messaging_api.TemplateMessage{
