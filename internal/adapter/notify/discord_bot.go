@@ -8,7 +8,6 @@ import (
 // It takes an access token, channel ID, and the message string as input.
 // It returns the sent message object or an error if one occurred.
 func SendMessageByDiscord(accessToken, channelID, message string) (*discordgo.Message, error) {
-
 	discord, err := discordgo.New("Bot " + accessToken)
 	if err != nil {
 		return nil, err

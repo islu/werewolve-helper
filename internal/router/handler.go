@@ -4,12 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	mrand "math/rand/v2" // Using math/rand/v2
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
-
 	"werewolve-helper/internal"
 	"werewolve-helper/internal/adapter/notify"
 	"werewolve-helper/internal/domain"
@@ -19,10 +17,8 @@ import (
 	"github.com/line/line-bot-sdk-go/v8/linebot/webhook"
 )
 
-var (
-	// {key: ownerID, value: Round}
-	rounds = make(map[string]*domain.Round)
-)
+// {key: ownerID, value: Round}
+var rounds = make(map[string]*domain.Round)
 
 // Postback event key
 const (
@@ -32,7 +28,6 @@ const (
 )
 
 func RegisterWebhook(config internal.BotConfig, bot *messaging_api.MessagingApiAPI) {
-
 	// Setup HTTP Server for receiving requests from LINE platform
 	http.HandleFunc("/callback", func(w http.ResponseWriter, req *http.Request) {
 		// log.Println("/callback called...")
@@ -40,7 +35,7 @@ func RegisterWebhook(config internal.BotConfig, bot *messaging_api.MessagingApiA
 		cb, err := webhook.ParseRequest(config.LineChannelSecret, req)
 		if err != nil {
 			log.Printf("Cannot parse request: %+v\n", err)
-			if err == linebot.ErrInvalidSignature {
+			if errors.Is(err, linebot.ErrInvalidSignature) {
 				w.WriteHeader(400)
 			} else {
 				w.WriteHeader(500)
@@ -111,7 +106,6 @@ func RegisterWebhook(config internal.BotConfig, bot *messaging_api.MessagingApiA
 }
 
 func handleText(bot *messaging_api.MessagingApiAPI, replyToken string, message *webhook.TextMessageContent, source webhook.UserSource) error {
-
 	text := message.Text
 
 	if ownerID := findRoundByInviteNo(text); ownerID != "" {
@@ -154,7 +148,6 @@ func handleText(bot *messaging_api.MessagingApiAPI, replyToken string, message *
 }
 
 func handleImage(bot *messaging_api.MessagingApiAPI, replyToken string, message *webhook.ImageMessageContent, source webhook.UserSource) error {
-
 	u := message.ContentProvider.OriginalContentUrl
 
 	url, err := url.Parse(u)
@@ -167,7 +160,12 @@ func handleImage(bot *messaging_api.MessagingApiAPI, replyToken string, message 
 	case "settingRole":
 
 		// Generate inviteNo
-		inviteNo := fmt.Sprintf("%06d", mrand.IntN(999999))
+		randomNo, err := domain.Rng.IntN(999999)
+		if err != nil {
+			log.Println("Error generating random inviteNo: ", err)
+			return err
+		}
+		inviteNo := fmt.Sprintf("%06d", randomNo)
 		if isRoundInviteNoDuplicate(inviteNo) {
 			log.Println("inviteNo duplicate: " + inviteNo)
 			m1 := messaging_api.TextMessage{Text: "創建失敗，請重新嘗試"}
@@ -276,7 +274,6 @@ func handleImage(bot *messaging_api.MessagingApiAPI, replyToken string, message 
 
 		m1 := messaging_api.TextMessage{Text: "成功創建房間編號為: " + inviteNo}
 		return reply(bot, replyToken, m1)
-
 	}
 	return errors.New("Unknown url query key " + q.Get("m"))
 }
@@ -340,7 +337,6 @@ func findRoundByInviteNo(inviteNo string) string {
 }
 
 func reply(bot *messaging_api.MessagingApiAPI, replyToken string, msg ...messaging_api.MessageInterface) error {
-
 	var messages []messaging_api.MessageInterface
 	messages = append(messages, msg...)
 
@@ -356,7 +352,6 @@ func reply(bot *messaging_api.MessagingApiAPI, replyToken string, msg ...messagi
 }
 
 func push(bot *messaging_api.MessagingApiAPI, eventType string, source webhook.UserSource, discordBotToken, discordChannelID string) error {
-
 	profile, err := bot.GetProfile(source.UserId)
 	if err != nil {
 		profile = &messaging_api.UserProfileResponse{}

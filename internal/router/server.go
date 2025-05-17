@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 	"werewolve-helper/internal"
 
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
@@ -30,7 +31,12 @@ func StartServer() {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	if err := http.ListenAndServe(":"+config.Port, nil); err != nil {
+	server := &http.Server{
+		Addr:         ":" + config.Port,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatalln(err)
 	}
 

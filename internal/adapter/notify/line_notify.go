@@ -18,7 +18,6 @@ const lineNotifyURL = "https://notify-api.line.me/api/notify"
 //
 // Send line notify simple text
 func SendText(accessToken, message string) error {
-
 	// Set the request body with the message
 	body := strings.NewReader(url.Values{
 		"message": []string{message},
@@ -34,7 +33,6 @@ func SendText(accessToken, message string) error {
 // It takes the request body, access token, and content type as input.
 // It returns an error if the request fails or if the API returns a non-200 status.
 func requestToLineServer(body io.Reader, accessToken, contentType string) error {
-
 	// Create a new HTTP POST request with the provided body and URL
 	req, err := http.NewRequest("POST", lineNotifyURL, body)
 	if err != nil {
@@ -61,7 +59,9 @@ func requestToLineServer(body io.Reader, accessToken, contentType string) error 
 	if err = json.NewDecoder(res.Body).Decode(&responseBody); err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	defer func() {
+		_ = res.Body.Close()
+	}()
 
 	if responseBody.Status != 200 {
 		err := fmt.Errorf("%d: %s", responseBody.Status, responseBody.Message)
