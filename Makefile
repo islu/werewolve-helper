@@ -6,7 +6,7 @@ run:
 	go run main.go
 
 test:
-	go test -v ./... -cover --coverprofile=coverage.out
+	go test ./... -cover --coverprofile=coverage.out
 
 cover-func: test
 	go tool cover -func=coverage.out
