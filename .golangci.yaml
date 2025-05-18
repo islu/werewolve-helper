@@ -1,0 +1,47 @@
+# Refer to https://golangci-lint.run/usage/configuration/
+
+# Defines the configuration version.
+# The only possible value is "2".
+version: "2"
+linters:
+  enable:
+    - errname
+    - errorlint
+    - gosec
+    - musttag
+    - perfsprint
+    - testifylint
+formatters:
+  # Enable specific formatter.
+  # Default: [] (uses standard Go formatting)
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+    - golines
+  settings:
+    gofmt:
+      # Apply the rewrite rules to the source before reformatting.
+      # https://pkg.go.dev/cmd/gofmt
+      # Default: []
+      rewrite-rules:
+        - pattern: 'interface{}'
+          replacement: 'any'
+    golines:
+      # Target maximum line length.
+      # Default: 100
+      max-len: 200
+issues:
+  # Maximum issues count per one linter.
+  # Set to 0 to disable.
+  # Default: 50
+  max-issues-per-linter: 0
+  # Maximum count of issues with the same text.
+  # Set to 0 to disable.
+  # Default: 3
+  max-same-issues: 0
+run:
+  # Timeout for analysis, e.g. 30s, 5m, 5m30s.
+  # If the value is lower or equal to 0, the timeout is disabled.
+  # Default: 1m
+  timeout: "5m"

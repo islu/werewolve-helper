@@ -1,16 +1,15 @@
-package internal
+package router
 
 import (
 	"log"
 	"net/http"
 	"text/template"
+	"werewolve-helper/internal"
 )
 
-func RegisterLIFF(config BotConfig) {
-
+func RegisterLIFF(config internal.BotConfig) {
 	http.HandleFunc("/liff/setting-role", func(w http.ResponseWriter, r *http.Request) {
-
-		t, err := template.ParseFiles("internal/liff/setting_role.html")
+		t, err := template.ParseFiles("internal/router/liff/setting_role.html")
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -20,5 +19,4 @@ func RegisterLIFF(config BotConfig) {
 			log.Println(err)
 		}
 	})
-
 }

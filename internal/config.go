@@ -4,10 +4,10 @@ type BotConfig struct {
 	LineChannelSecret string
 	LineChannelToken  string
 	Port              string
-	DeveloperID       string
-	LIFFID            string
 	DiscordBotToken   string
 	DiscordChannelID  string
+	LiffID            string
 
-	// LineNotifyToken   string
+	// DeveloperID     string // Deprecated: developer ID is not used
+	// LineNotifyToken string // Deprecated: LINE Notify token is not used
 }

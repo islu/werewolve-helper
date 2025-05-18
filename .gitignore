@@ -4,3 +4,6 @@
 # Executable file
 *.exe
 main
+
+# Test binary
+coverage.out
