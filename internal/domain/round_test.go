@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -116,7 +115,7 @@ func TestRound_GetParticipantsInfoReplyMessage(t *testing.T) {
 	// Test by owner
 	info := round.GetParticipantsInfoReplyMessage(ownerID)
 	expectedPrefix := "目前參與人數: 1/2"
-	assert.True(strings.HasPrefix(info, expectedPrefix), "Info should start with '%s', got '%s'", expectedPrefix, info)
+	assert.Truef(strings.HasPrefix(info, expectedPrefix), "Info should start with %s, got %s", expectedPrefix, info)
 	if len(round.Participants) > 0 {
 		assert.Contains(info, "User One:"+round.Participants[0].Identity.String(), "Info should contain participant details")
 	}
@@ -160,7 +159,7 @@ func TestRound_IsOwner(t *testing.T) {
 	round := NewRound(ownerID, "testInvite")
 	assert := assert.New(t)
 
-	assert.True(round.IsOwner(ownerID), fmt.Sprintf("Expected %s to be owner", ownerID))
+	assert.Truef(round.IsOwner(ownerID), "Expected %s to be owner", ownerID)
 	assert.False(round.IsOwner("nonOwner456"), "Expected nonOwner456 not to be owner")
 }
 
