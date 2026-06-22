@@ -7,18 +7,15 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"werewolve-helper/internal"
 	"werewolve-helper/internal/adapter/notify"
 	"werewolve-helper/internal/domain"
+	"werewolve-helper/internal/usecase"
 
 	"github.com/line/line-bot-sdk-go/v8/linebot"
 	"github.com/line/line-bot-sdk-go/v8/linebot/messaging_api"
 	"github.com/line/line-bot-sdk-go/v8/linebot/webhook"
 )
-
-// {key: ownerID, value: Round}
-var rounds = make(map[string]*domain.Round)
 
 // Postback event key
 const (
@@ -27,11 +24,31 @@ const (
 	EventAgain  = "again"
 )
 
+// roleKeys maps the LIFF image query keys to game identities. Used when a round
+// is created so new roles only require adding a row here.
+var roleKeys = []struct {
+	key      string
+	identity domain.Identity
+}{
+	{"b1", domain.WerewolfKing},
+	{"b2", domain.WhiteWerewolf},
+	{"b3", domain.GhostRider},
+	{"b4", domain.WerewolfBeauty},
+	{"b0", domain.Werewolf},
+	{"g1", domain.Seer},
+	{"g2", domain.Witch},
+	{"g3", domain.Hunter},
+	{"g4", domain.Guard},
+	{"g5", domain.Knight},
+	{"g6", domain.Magician},
+	{"g0", domain.Villager},
+}
+
 func RegisterWebhook(config internal.BotConfig, bot *messaging_api.MessagingApiAPI) {
+	manager := usecase.NewRoundManager()
+
 	// Setup HTTP Server for receiving requests from LINE platform
 	http.HandleFunc("/callback", func(w http.ResponseWriter, req *http.Request) {
-		// log.Println("/callback called...")
-
 		cb, err := webhook.ParseRequest(config.LineChannelSecret, req)
 		if err != nil {
 			log.Printf("Cannot parse request: %+v\n", err)
@@ -43,60 +60,48 @@ func RegisterWebhook(config internal.BotConfig, bot *messaging_api.MessagingApiA
 			return
 		}
 
-		// log.Println("Handling events...")
 		for _, event := range cb.Events {
-			// log.Printf("/callback called%+v...\n", event)
-
 			switch e := event.(type) {
 			case webhook.MessageEvent:
+				source, ok := userSource(e.Source)
+				if !ok {
+					continue
+				}
 				switch message := e.Message.(type) {
 				case webhook.TextMessageContent:
-					switch source := e.Source.(type) {
-					case webhook.UserSource:
-						if err := handleText(bot, e.ReplyToken, &message, source); err != nil {
-							log.Println("Handle text event error: ", err)
-						}
-					default:
-						log.Printf("Unsupported source content: %T\n", e.Source)
+					if err := handleText(bot, manager, e.ReplyToken, &message, source); err != nil {
+						log.Println("Handle text event error: ", err)
 					}
 				case webhook.ImageMessageContent:
-					switch source := e.Source.(type) {
-					case webhook.UserSource:
-						if err := handleImage(bot, e.ReplyToken, &message, source); err != nil {
-							log.Println("Handle image event error: ", err)
-						}
-					default:
-						log.Printf("Unsupported source content: %T\n", e.Source)
+					if err := handleImage(bot, manager, e.ReplyToken, &message, source); err != nil {
+						log.Println("Handle image event error: ", err)
 					}
 				default:
 					log.Printf("Unsupported message content: %T\n", e.Message)
 				}
 			case webhook.PostbackEvent:
-				switch source := e.Source.(type) {
-				case webhook.UserSource:
-					if err := handlePostbackEvent(bot, e.ReplyToken, e.Postback, source, config.LiffID); err != nil {
-						log.Println("Handle postback event error: ", err)
-					}
-				default:
-					log.Printf("Unsupported source content: %T\n", e.Source)
+				source, ok := userSource(e.Source)
+				if !ok {
+					continue
+				}
+				if err := handlePostbackEvent(bot, manager, e.ReplyToken, e.Postback, source, config.LiffID); err != nil {
+					log.Println("Handle postback event error: ", err)
 				}
 			case webhook.FollowEvent:
-				switch source := e.Source.(type) {
-				case webhook.UserSource:
-					if err := push(bot, "FollowEvent", source, config.DiscordBotToken, config.DiscordChannelID); err != nil {
-						log.Println("Notify error: ", err)
-					}
-				default:
-					log.Printf("Unsupported source content: %T\n", e.Source)
+				source, ok := userSource(e.Source)
+				if !ok {
+					continue
+				}
+				if err := push(bot, "FollowEvent", source, config.DiscordBotToken, config.DiscordChannelID); err != nil {
+					log.Println("Notify error: ", err)
 				}
 			case webhook.UnfollowEvent:
-				switch source := e.Source.(type) {
-				case webhook.UserSource:
-					if err := push(bot, "UnfollowEvent", source, config.DiscordBotToken, config.DiscordChannelID); err != nil {
-						log.Println("Notify error: ", err)
-					}
-				default:
-					log.Printf("Unsupported source content: %T\n", e.Source)
+				source, ok := userSource(e.Source)
+				if !ok {
+					continue
+				}
+				if err := push(bot, "UnfollowEvent", source, config.DiscordBotToken, config.DiscordChannelID); err != nil {
+					log.Println("Notify error: ", err)
 				}
 			default:
 				log.Printf("Unsupported event: %T\n", event)
@@ -105,60 +110,55 @@ func RegisterWebhook(config internal.BotConfig, bot *messaging_api.MessagingApiA
 	})
 }
 
-func handleText(bot *messaging_api.MessagingApiAPI, replyToken string, message *webhook.TextMessageContent, source webhook.UserSource) error {
-	text := message.Text
-
-	if ownerID := findRoundByInviteNo(text); ownerID != "" {
-
-		if r, ok := rounds[source.UserId]; ok {
-
-			if r.IsExpired() {
-				delete(rounds, ownerID)
-				m1 := messaging_api.TextMessage{Text: "活動已結束"}
-				return reply(bot, replyToken, m1)
-			}
-
-			user, err := bot.GetProfile(source.UserId)
-			if err != nil {
-				return err
-			}
-
-			if ok, p := r.IsRegistrationDuplicate(user.UserId); ok {
-				m1 := messaging_api.TextMessage{Text: "已註冊，你的身分是 " + p.Identity.String()}
-				return reply(bot, replyToken, m1)
-			}
-
-			iden := r.Register(source.UserId, user.DisplayName, user.PictureUrl)
-			if iden == "" {
-				m1 := messaging_api.TextMessage{Text: "已額滿"}
-				return reply(bot, replyToken, m1)
-			}
-			var sb strings.Builder
-			sb.WriteString("你的身分是 ")
-			sb.WriteString(iden)
-			m1 := messaging_api.TextMessage{Text: sb.String()}
-			return reply(bot, replyToken, m1)
-		}
-
-		m1 := messaging_api.TextMessage{Text: "查無此活動"}
-		return reply(bot, replyToken, m1)
+// userSource extracts a UserSource, logging when the source type is unsupported.
+func userSource(src webhook.SourceInterface) (webhook.UserSource, bool) {
+	s, ok := src.(webhook.UserSource)
+	if !ok {
+		log.Printf("Unsupported source content: %T\n", src)
+		return webhook.UserSource{}, false
 	}
-
-	return errors.New("Unknown message text " + text)
+	return s, true
 }
 
-func handleImage(bot *messaging_api.MessagingApiAPI, replyToken string, message *webhook.ImageMessageContent, source webhook.UserSource) error {
-	u := message.ContentProvider.OriginalContentUrl
+func handleText(bot *messaging_api.MessagingApiAPI, manager *usecase.RoundManager, replyToken string, message *webhook.TextMessageContent, source webhook.UserSource) error {
+	text := message.Text
 
-	url, err := url.Parse(u)
+	// The text is treated as an invite number; find the round it belongs to.
+	r, ok := manager.FindByInviteNo(text)
+	if !ok {
+		return errors.New("Unknown message text " + text)
+	}
+
+	if r.IsExpired() {
+		manager.Delete(r.OwnerID)
+		return reply(bot, replyToken, messaging_api.TextMessage{Text: "活動已結束"})
+	}
+
+	user, err := bot.GetProfile(source.UserId)
 	if err != nil {
 		return err
 	}
-	q := url.Query()
+
+	if dup, p := r.IsRegistrationDuplicate(user.UserId); dup {
+		return reply(bot, replyToken, messaging_api.TextMessage{Text: "已註冊，你的身分是 " + p.Identity.String()})
+	}
+
+	iden := r.Register(source.UserId, user.DisplayName, user.PictureUrl)
+	if iden == "" {
+		return reply(bot, replyToken, messaging_api.TextMessage{Text: "已額滿"})
+	}
+	return reply(bot, replyToken, messaging_api.TextMessage{Text: "你的身分是 " + iden})
+}
+
+func handleImage(bot *messaging_api.MessagingApiAPI, manager *usecase.RoundManager, replyToken string, message *webhook.ImageMessageContent, source webhook.UserSource) error {
+	parsed, err := url.Parse(message.ContentProvider.OriginalContentUrl)
+	if err != nil {
+		return err
+	}
+	q := parsed.Query()
 
 	switch q.Get("m") {
 	case "settingRole":
-
 		// Generate inviteNo
 		randomNo, err := domain.Rng.IntN(999999)
 		if err != nil {
@@ -166,119 +166,34 @@ func handleImage(bot *messaging_api.MessagingApiAPI, replyToken string, message 
 			return err
 		}
 		inviteNo := fmt.Sprintf("%06d", randomNo)
-		if isRoundInviteNoDuplicate(inviteNo) {
+		if manager.IsInviteNoDuplicate(inviteNo) {
 			log.Println("inviteNo duplicate: " + inviteNo)
-			m1 := messaging_api.TextMessage{Text: "創建失敗，請重新嘗試"}
-			return reply(bot, replyToken, m1)
+			return reply(bot, replyToken, messaging_api.TextMessage{Text: "創建失敗，請重新嘗試"})
 		}
-		// Create round and set identity
+
+		// Create round and set identities from the query keys.
 		round := domain.NewRound(source.UserId, inviteNo)
-		if v := q.Get("b1"); v != "" {
+		for _, rk := range roleKeys {
+			v := q.Get(rk.key)
+			if v == "" {
+				continue
+			}
 			n, err := strconv.Atoi(v)
 			if err != nil {
-				log.Println("parse error with b1: ", err)
+				log.Printf("parse error with %s: %v", rk.key, err)
 				return err
 			}
-			round.SetIdentity(source.UserId, domain.WerewolfKing, n)
-		}
-		if v := q.Get("b2"); v != "" {
-			n, err := strconv.Atoi(v)
-			if err != nil {
-				log.Println("parse error with b2: ", err)
-				return err
-			}
-			round.SetIdentity(source.UserId, domain.WhiteWerewolf, n)
-		}
-		if v := q.Get("b3"); v != "" {
-			n, err := strconv.Atoi(v)
-			if err != nil {
-				log.Println("parse error with b3: ", err)
-				return err
-			}
-			round.SetIdentity(source.UserId, domain.GhostRider, n)
-		}
-		if v := q.Get("b4"); v != "" {
-			n, err := strconv.Atoi(v)
-			if err != nil {
-				log.Println("parse error with b4: ", err)
-				return err
-			}
-			round.SetIdentity(source.UserId, domain.WerewolfBeauty, n)
-		}
-		if v := q.Get("b0"); v != "" {
-			n, err := strconv.Atoi(v)
-			if err != nil {
-				log.Println("parse error with b0: ", err)
-				return err
-			}
-			round.SetIdentity(source.UserId, domain.Werewolf, n)
-		}
-		if v := q.Get("g1"); v != "" {
-			n, err := strconv.Atoi(v)
-			if err != nil {
-				log.Println("parse error with g1: ", err)
-				return err
-			}
-			round.SetIdentity(source.UserId, domain.Seer, n)
-		}
-		if v := q.Get("g2"); v != "" {
-			n, err := strconv.Atoi(v)
-			if err != nil {
-				log.Println("parse error with g2: ", err)
-				return err
-			}
-			round.SetIdentity(source.UserId, domain.Witch, n)
-		}
-		if v := q.Get("g3"); v != "" {
-			n, err := strconv.Atoi(v)
-			if err != nil {
-				log.Println("parse error with g3: ", err)
-				return err
-			}
-			round.SetIdentity(source.UserId, domain.Hunter, n)
-		}
-		if v := q.Get("g4"); v != "" {
-			n, err := strconv.Atoi(v)
-			if err != nil {
-				log.Println("parse error with g4: ", err)
-				return err
-			}
-			round.SetIdentity(source.UserId, domain.Guard, n)
-		}
-		if v := q.Get("g5"); v != "" {
-			n, err := strconv.Atoi(v)
-			if err != nil {
-				log.Println("parse error with g5: ", err)
-				return err
-			}
-			round.SetIdentity(source.UserId, domain.Knight, n)
-		}
-		if v := q.Get("g6"); v != "" {
-			n, err := strconv.Atoi(v)
-			if err != nil {
-				log.Println("parse error with g6: ", err)
-				return err
-			}
-			round.SetIdentity(source.UserId, domain.Magician, n)
-		}
-		if v := q.Get("g0"); v != "" {
-			n, err := strconv.Atoi(v)
-			if err != nil {
-				log.Println("parse error with g0: ", err)
-				return err
-			}
-			round.SetIdentity(source.UserId, domain.Villager, n)
+			round.SetIdentity(source.UserId, rk.identity, n)
 		}
 
-		rounds[source.UserId] = round
-
-		m1 := messaging_api.TextMessage{Text: "成功創建房間編號為: " + inviteNo}
-		return reply(bot, replyToken, m1)
+		manager.Put(round)
+		return reply(bot, replyToken, messaging_api.TextMessage{Text: "成功創建房間編號為: " + inviteNo})
 	}
 	return errors.New("Unknown url query key " + q.Get("m"))
 }
 
 func handlePostbackEvent(bot *messaging_api.MessagingApiAPI,
+	manager *usecase.RoundManager,
 	replyToken string,
 	postback *webhook.PostbackContent,
 	source webhook.UserSource,
@@ -286,64 +201,33 @@ func handlePostbackEvent(bot *messaging_api.MessagingApiAPI,
 ) error {
 	switch postback.Data {
 	case EventCreate:
-
-		delete(rounds, source.UserId)
-
+		manager.Delete(source.UserId)
 		return reply(bot, replyToken, ModeSettingTemplateV2(liffID))
 
 	case EventLook:
-
-		if r, ok := rounds[source.UserId]; ok {
+		if r, ok := manager.Get(source.UserId); ok {
 			m1 := messaging_api.TextMessage{Text: "房間編號為: " + r.InviteNo}
 			m2 := messaging_api.TextMessage{Text: r.GetParticipantsInfoReplyMessage(source.UserId)}
 			return reply(bot, replyToken, m1, m2)
 		}
-
-		m1 := messaging_api.TextMessage{Text: "...目前沒有開設房間\n請先開設房間喔"}
-		return reply(bot, replyToken, m1)
+		return reply(bot, replyToken, messaging_api.TextMessage{Text: "...目前沒有開設房間\n請先開設房間喔"})
 
 	case EventAgain:
-
-		if r, ok := rounds[source.UserId]; ok {
+		if r, ok := manager.Get(source.UserId); ok {
 			r.Again()
-			m1 := messaging_api.TextMessage{Text: "已經重新發牌囉!"}
-			return reply(bot, replyToken, m1)
+			return reply(bot, replyToken, messaging_api.TextMessage{Text: "已經重新發牌囉!"})
 		}
-
-		m1 := messaging_api.TextMessage{Text: "...目前沒有開設房間\n請先開設房間喔"}
-		return reply(bot, replyToken, m1)
+		return reply(bot, replyToken, messaging_api.TextMessage{Text: "...目前沒有開設房間\n請先開設房間喔"})
 	}
 
 	return errors.New("Unknown event key " + postback.Data)
 }
 
-func isRoundInviteNoDuplicate(inviteNo string) bool {
-	for _, r := range rounds {
-		if r.InviteNo == inviteNo {
-			return true
-		}
-	}
-	return false
-}
-
-// Return round owner ID
-func findRoundByInviteNo(inviteNo string) string {
-	for id, r := range rounds {
-		if r.InviteNo == inviteNo {
-			return id
-		}
-	}
-	return ""
-}
-
 func reply(bot *messaging_api.MessagingApiAPI, replyToken string, msg ...messaging_api.MessageInterface) error {
-	var messages []messaging_api.MessageInterface
-	messages = append(messages, msg...)
-
 	if _, err := bot.ReplyMessage(
 		&messaging_api.ReplyMessageRequest{
 			ReplyToken: replyToken,
-			Messages:   messages,
+			Messages:   msg,
 		},
 	); err != nil {
 		return err
